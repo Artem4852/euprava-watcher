@@ -1,4 +1,4 @@
-import os, dotenv
+import os, dotenv, json
 from zoneinfo import ZoneInfo
 import html
 import asyncio
@@ -50,6 +50,8 @@ async def recheck_site(context):
                 months[month] = []
             months[month].append(slot)
 
+        last_seen = []
+
         months = dict(sorted(months.items(), key=lambda x: datetime.strptime(x[0], "%b").month))
 
         message = "<b>Available slots:</b>\n"
@@ -62,12 +64,31 @@ async def recheck_site(context):
 
                 event_timestamp = datetime.strptime(f"{slot['date']} {slot['time']}", "%d. %m. %Y %H:%M").timestamp()
 
+                last_seen.append(f"{slot['date']} {slot['time']} - {slot['place']}")
+
                 message += (
                     f'- <tg-time unix="{event_timestamp}" format="wdt">{formatted_date} at {slot["time"]}</tg-time> - '
                     f'{html.escape(slot["place"].capitalize())}\n'
                 )
 
+        if not os.path.exists(f"last_seen_{user}.json"):
+            with open(f"last_seen_{user}.json", "w") as f:
+                json.dump([], f)
+        with open(f"last_seen_{user}.json", "r") as f:
+            try:
+                previous_last_seen = json.load(f)
+            except json.JSONDecodeError:
+                previous_last_seen = []
+
+        if last_seen == previous_last_seen:
+            print("No new slots found.")
+            continue
+
         await context.bot.send_message(chat_id=user, text=message, parse_mode="HTML")
+
+        with open(f"last_seen_{user}.json", "w") as f:
+            json.dump(last_seen, f)
+
         # if filtered_data:
             # message = "Available slots:\n\n"
             # for slot in filtered_data:
