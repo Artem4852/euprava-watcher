@@ -100,7 +100,7 @@ def main():
 
     application.add_handler(CommandHandler('start', start))
 
-    application.job_queue.run_repeating(recheck_site, interval=900)
+    application.job_queue.run_repeating(recheck_site, interval=600)
     application.job_queue.run_once(recheck_site, when=0)
 
     application.run_polling()
